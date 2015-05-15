@@ -1,21 +1,47 @@
+/** File: AlternatingGreedy.java
+ * Author: Isaac Banner
+ *         Rachel Silva
+ *
+ * Given an input of coordinates, preceded by the number of coordinates,
+ * program will print the 'time' to 'wake' all robots at coordinates,
+ * starting with the first listed coordinate, by choosing the closest
+ * coordinate for the first robot leaving a coordinate, and the farthest
+ * coordinate for the second robot leaving the same coordinate.
+ *
+ * Running time: O(n^2)
+ */
+
 import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.PriorityQueue;
 import java.lang.Math;
+import java.io.*;
 
 class AlternatingGreedy{
 
     public static double distance(Robot one, Robot two){
         double x = Math.pow(one.getX() - two.getX(),2);
         double y = Math.pow(one.getY() - two.getY(),2);
-        double d = Math.sqrt(x+y);
-        return d;
+        return Math.sqrt(x+y);
     }
 
 
     public static void main(String[] args){
-        Scanner sc = new Scanner(System.in);
+
+        // Import set of points from file
+        if(args.length != 1){
+            System.out.println("Program requires exactly one argument.");
+            System.exit(2);
+        }
+
+        Scanner sc = null;
+        try{
+            sc = new Scanner(new File(args[0]));
+        } catch (FileNotFoundException e){
+            System.out.println(e.getMessage());
+            System.exit(2);
+        }
     
         int numRobots = sc.nextInt();
 
@@ -28,54 +54,53 @@ class AlternatingGreedy{
         }
 
         ArrayList<TreeMap<Double,Robot>> adjList = 
-            new ArrayList<TreeMap<Double,Robot>>(numRobots);
+            new ArrayList<>(numRobots);
 
-        int numDist = 0;
         for(int i=0; i<numRobots; i++){
-            adjList.add(new TreeMap<Double,Robot>());
+            adjList.add(new TreeMap<>());
             for(int j=0; j<numRobots; j++){
                 if(i!=j){
-                    Double dist = new Double(distance(robots[i],robots[j]));
-                    adjList.get(i).put(dist,robots[j]);
+
+                    Double dist = distance(robots[i],robots[j])+(robots[j].getIndex()*(0.0000001));
+                    adjList.get(i).put(dist, robots[j]);
                 }
             }
         }
 
+        long startTime = System.currentTimeMillis();
 
-        TreeSet<Robot> awakePath = new TreeSet<Robot>();
+
+        PriorityQueue<Robot> awakePath = new PriorityQueue<>();
         robots[0].wakeUp();
         awakePath.add(robots[0]);
         int numAwake = 1;
-        double lastTime = -1;
 
-        while(numAwake < numRobots-1){
-            Robot current = awakePath.pollFirst();
+        while(numAwake < numRobots){
+            Robot current = awakePath.poll();
             Robot nextRobot;
             double dist;
-            if(current.getTime() != lastTime){
-                System.out.println("first");
+            if(current.getCount() == 0){
                 dist = adjList.get(current.getIndex()).firstKey();
                 nextRobot = adjList.get(current.getIndex()).pollFirstEntry().getValue();
                 while( nextRobot.isAwake() ){
                     dist = adjList.get(current.getIndex()).firstKey();
                     nextRobot = adjList.get(current.getIndex()).pollFirstEntry().getValue();
                 }
-                lastTime = current.getTime() + dist;
             } else {
-                System.out.println("last");
                 dist = adjList.get(current.getIndex()).lastKey();
                 nextRobot = adjList.get(current.getIndex()).pollLastEntry().getValue();
                 while( nextRobot.isAwake() ){
                     dist = adjList.get(current.getIndex()).lastKey();
                     nextRobot = adjList.get(current.getIndex()).pollLastEntry().getValue();
                 }   
-                lastTime = 0;
             }
             nextRobot.wakeUp();
             double time = current.getTime();
+            System.out.println(current.getIndex()+ " " + nextRobot.getIndex());
             current.setIndex(nextRobot.getIndex());
-            current.setPosition(nextRobot.getX(),nextRobot.getY());
+            current.setPosition(nextRobot.getX(), nextRobot.getY());
             current.setTime(time + dist);
+            current.incCount();
             nextRobot.setTime(time + dist);
             awakePath.add(current);
             awakePath.add(nextRobot);
@@ -83,7 +108,12 @@ class AlternatingGreedy{
 
         }
 
-        System.out.println(awakePath.first().getTime());
-    
+        Robot lastRobot = awakePath.poll();
+        while(awakePath.size() > 1) {
+            lastRobot = awakePath.poll();
+        }
+        System.out.println(lastRobot.getTime());
+        long endTime = System.currentTimeMillis();
+        System.out.println("Runtime for AltGreed : " + (endTime - startTime) + " milliseconds");
     }
 }
