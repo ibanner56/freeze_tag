@@ -50,7 +50,7 @@ public class MstTSP {
 			numChildren[p.i]++;
 			if(numChildren[p.i] >= 2) {
 				for(int i = 0; i < n; i++) {
-					if(!popped[i])
+					if(!popped[i] && graph.points[i].pVert == p.i)
 						graph.points[i].resetPriority();
 				}
 				for(int i = 0; i < n; i++) {
@@ -58,7 +58,9 @@ public class MstTSP {
 						if(!popped[j] && popped[i] && numChildren[i] < 2) {
 							if(graph.points[i].priority - Point.d > 
 								graph.adjacency[i*n + j]) {
-								graph.points[j].setPriority(graph.adjacency[i*n + j], i);
+								graph.points[j].setPriority(
+									graph.adjacency[i*n + j] 
+									+ graph.points[i].priority, i);
 							}
 						}
 					}
@@ -83,10 +85,6 @@ public class MstTSP {
 			p.addChild(q);
         }
 
-		if( n <= 10 ) {
-			System.out.println(graph);
-			System.out.println(mstG);
-		}
 		System.out.println(mstG.mstString());
 		long endTime = System.currentTimeMillis();
 		System.out.println("Runtime for Mst TSP   : " + (endTime - startTime) + " milliseconds");
